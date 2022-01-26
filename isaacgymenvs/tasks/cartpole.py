@@ -177,6 +177,16 @@ class Cartpole(VecTask):
         self.compute_observations()
         self.compute_reward()
 
+    def set_params(self, friction, mass):
+        for i, (env_ptr, cartpole_handle) in enumerate(zip(self.envs, self.cartpole_handles)):
+            dof_props = self.gym.get_actor_dof_properties(env_ptr, cartpole_handle)
+            dof_props['friction'][1] = friction[i]
+            self.gym.set_actor_dof_properties(env_ptr, cartpole_handle, dof_props)
+
+            body_props = self.gym.get_actor_rigid_body_properties(env_ptr, cartpole_handle)
+            body_props[2].mass = mass[i]
+            self.gym.set_actor_rigid_body_properties(env_ptr, cartpole_handle, body_props, True)
+
 #####################################################################
 ###=========================jit functions=========================###
 #####################################################################
