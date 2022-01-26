@@ -31,11 +31,12 @@ import os
 import torch
 
 from isaacgym import gymutil, gymtorch, gymapi
-from tasks.base.vec_task import VecTask
+from .base.vec_task import VecTask
 
 class Cartpole(VecTask):
 
     def __init__(self, cfg, sim_device, graphics_device_id, headless):
+        print(dict(cfg))
         self.cfg = cfg
 
         self.reset_dist = self.cfg["env"]["resetDist"]
@@ -105,9 +106,14 @@ class Cartpole(VecTask):
             dof_props = self.gym.get_actor_dof_properties(env_ptr, cartpole_handle)
             dof_props['driveMode'][0] = gymapi.DOF_MODE_EFFORT
             dof_props['driveMode'][1] = gymapi.DOF_MODE_NONE
+            dof_props['friction'][1] = 0.2
             dof_props['stiffness'][:] = 0.0
             dof_props['damping'][:] = 0.0
             self.gym.set_actor_dof_properties(env_ptr, cartpole_handle, dof_props)
+
+            body_props = self.gym.get_actor_rigid_body_properties(env_ptr, cartpole_handle)
+            body_props[2].mass = np.random.uniform(0.5, 1.5)
+            self.gym.set_actor_rigid_body_properties(env_ptr, cartpole_handle, body_props, True)
 
             self.envs.append(env_ptr)
             self.cartpole_handles.append(cartpole_handle)
@@ -138,8 +144,10 @@ class Cartpole(VecTask):
         return self.obs_buf
 
     def reset_idx(self, env_ids):
-        positions = 0.2 * (torch.rand((len(env_ids), self.num_dof), device=self.device) - 0.5)
-        velocities = 0.5 * (torch.rand((len(env_ids), self.num_dof), device=self.device) - 0.5)
+        positions = torch.zeros((len(env_ids), self.num_dof), device=self.device)
+        velocities = torch.zeros((len(env_ids), self.num_dof), device=self.device)
+        # positions = 0.2 * (torch.rand((len(env_ids), self.num_dof), device=self.device) - 0.5)
+        # velocities = 0.5 * (torch.rand((len(env_ids), self.num_dof), device=self.device) - 0.5)
 
         self.dof_pos[env_ids, :] = positions[:]
         self.dof_vel[env_ids, :] = velocities[:]
@@ -163,7 +171,8 @@ class Cartpole(VecTask):
 
         env_ids = self.reset_buf.nonzero(as_tuple=False).squeeze(-1)
         if len(env_ids) > 0:
-            self.reset_idx(env_ids)
+            pass
+            # self.reset_idx(env_ids)
 
         self.compute_observations()
         self.compute_reward()
