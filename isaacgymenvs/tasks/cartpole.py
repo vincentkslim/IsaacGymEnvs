@@ -106,13 +106,13 @@ class Cartpole(VecTask):
             dof_props = self.gym.get_actor_dof_properties(env_ptr, cartpole_handle)
             dof_props['driveMode'][0] = gymapi.DOF_MODE_EFFORT
             dof_props['driveMode'][1] = gymapi.DOF_MODE_NONE
-            dof_props['friction'][1] = 0.2
+            dof_props['friction'][1] = 0.0
             dof_props['stiffness'][:] = 0.0
             dof_props['damping'][:] = 0.0
             self.gym.set_actor_dof_properties(env_ptr, cartpole_handle, dof_props)
 
             body_props = self.gym.get_actor_rigid_body_properties(env_ptr, cartpole_handle)
-            body_props[2].mass = np.random.uniform(0.5, 1.5)
+            body_props[2].mass = 1.5  # np.random.uniform(0.5, 1.5)
             self.gym.set_actor_rigid_body_properties(env_ptr, cartpole_handle, body_props, True)
 
             self.envs.append(env_ptr)
@@ -161,6 +161,8 @@ class Cartpole(VecTask):
         self.progress_buf[env_ids] = 0
 
     def pre_physics_step(self, actions):
+        # if torch.all(torch.isclose(actions, torch.tensor(0.0))):
+        #     return  # do nothing
         actions_tensor = torch.zeros(self.num_envs * self.num_dof, device=self.device, dtype=torch.float)
         actions_tensor[::self.num_dof] = actions.to(self.device).squeeze() * self.max_push_effort
         forces = gymtorch.unwrap_tensor(actions_tensor)
